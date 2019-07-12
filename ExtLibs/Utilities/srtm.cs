@@ -555,6 +555,9 @@ namespace MissionPlanner.Utilities
                     return;
             }
 
+            // write test
+            File.WriteAllLines(datadirectory + Path.DirectorySeparatorChar + "writetest.txt", new[] {"test string"});
+
             int checkednames = 0;
             List<string> list = new List<string>();
 
@@ -601,11 +604,12 @@ namespace MissionPlanner.Utilities
 
                 log.Info("Get " + url);
 
-                using (WebResponse res = req.GetResponse())
-                using (Stream resstream = res.GetResponseStream())
                 using (
                     BinaryWriter bw =
                         new BinaryWriter(File.Create(datadirectory + Path.DirectorySeparatorChar + filename + ".zip")))
+                using (WebResponse res = req.GetResponse())
+                using (Stream resstream = res.GetResponseStream())
+
                 {
                     byte[] buf1 = new byte[1024];
 
@@ -640,6 +644,8 @@ namespace MissionPlanner.Utilities
             }
         }
 
+        private static Dictionary<string, List<string>> MemoryCache = new Dictionary<string, List<string>>();
+
         static List<string> getListing(string url)
         {
             List<string> list = new List<string>();
@@ -669,6 +675,9 @@ namespace MissionPlanner.Utilities
                 }
             }
 
+            if (MemoryCache.ContainsKey(url))
+                return MemoryCache[url];
+
             try
             {
                 log.Info("srtm req " + url);
@@ -677,10 +686,10 @@ namespace MissionPlanner.Utilities
                 if(!String.IsNullOrEmpty(UserAgent))
                     req.UserAgent = UserAgent;
 
+                using (StreamWriter sw = new StreamWriter(datadirectory + Path.DirectorySeparatorChar + name))
                 using (WebResponse res = req.GetResponse())
                 using (StreamReader resstream = new StreamReader(res.GetResponseStream()))
                 {
-
                     string data = resstream.ReadToEnd();
 
                     Regex regex = new Regex("href=\"([^\"]+)\"", RegexOptions.IgnoreCase);
@@ -691,6 +700,8 @@ namespace MissionPlanner.Utilities
                         {
                             if (matchs[i].Groups[1].Value.ToString().Contains(".."))
                                 continue;
+                            if (matchs[i].Groups[1].Value.ToString().Equals("/"))
+                                continue;
                             if (matchs[i].Groups[1].Value.ToString().Contains("http"))
                                 continue;
                             if (matchs[i].Groups[1].Value.ToString().EndsWith("/srtm/version2_1/"))
@@ -699,10 +710,9 @@ namespace MissionPlanner.Utilities
                             list.Add(url.TrimEnd(new char[] {'/', '\\'}) + "/" + matchs[i].Groups[1].Value.ToString());
                         }
                     }
-                }
 
-                using (StreamWriter sw = new StreamWriter(datadirectory + Path.DirectorySeparatorChar + name))
-                {
+                    MemoryCache[url] = list;
+
                     list.ForEach(x =>
                     {
                         sw.WriteLine((string) x);
