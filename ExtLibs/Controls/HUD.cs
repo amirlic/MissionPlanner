@@ -2625,8 +2625,12 @@ namespace MissionPlanner.Controls
                         }
                         else
                         {
+							// Amir Lichter HUD
                             drawstring(item.Header + item.GetValue.ToString("0.##"), font, fontsize + 2,
-                                _whiteBrush, this.Width / 8, height);
+                                new SolidBrush(Color.Orange), this.Width / 8, height + 20);
+                            ////////////////////////////////////////////////
+                            //drawstring(item.Header + item.GetValue.ToString("0.##"), font, fontsize + 2,
+                            //    _whiteBrush, this.Width / 8, height);
                         }
 
                         height -= fontsize + 5;

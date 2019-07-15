@@ -57,6 +57,12 @@ namespace MissionPlanner.GCSViews
         altmode currentaltmode = altmode.Relative;
 
         bool grid;
+		
+		// Amir Lichter
+        bool draggButtonClicked = false;
+
+        // Amir Lichter
+        bool addWPButtonClicked = false;
 
         public static FlightPlanner instance;
 
@@ -1676,12 +1682,22 @@ namespace MissionPlanner.GCSViews
         /// <param name="e"></param>
         public void BUT_write_Click(object sender, EventArgs e)
         {
+            // Created By Amir Lichter
             if ((altmode) CMB_altmode.SelectedValue == altmode.Absolute)
             {
                 if ((int)DialogResult.No ==
                     CustomMessageBox.Show("Absolute Alt is selected are you sure?", "Alt Mode", MessageBoxButtons.YesNo))
                 {
                     CMB_altmode.SelectedValue = (int) altmode.Relative;
+                }
+            }
+
+            else if ((altmode)CMB_altmode.SelectedValue == altmode.Relative)
+            {
+                if ((int)DialogResult.No ==
+                    CustomMessageBox.Show("Relative Alt is selected are you sure?", "Alt Mode", MessageBoxButtons.YesNo))
+                {
+                    CMB_altmode.SelectedValue = (int)altmode.Absolute;
                 }
             }
 
@@ -1701,8 +1717,46 @@ namespace MissionPlanner.GCSViews
             }
 
             // check for invalid grid data
+            // Created By Amir Lichter
+            bool haveVTOLTakeOff = false;
+            bool haveVTOLLand = false;
+            if (Commands.Rows[0].Cells[Command.Index].Value.ToString().Contains("VTOL_TAKEOFF"))
+            {
+                haveVTOLTakeOff = true;
+            }
+
+            if (Commands.Rows[Commands.Rows.Count - 1].Cells[Command.Index].Value.ToString().Contains("VTOL_LAND"))
+            {
+                haveVTOLLand = true;
+            }
+
+            // Created By Amir Lichter
+            float dist = float.Parse(Commands.Rows[Commands.Rows.Count - 1].Cells[17].Value.ToString());
+
+            bool smallDest = false;
+
+            if (dist < 80)
+            {
+                smallDest = true;
+            }
+
+            bool highGrad = false;
+
+            // check for invalid grid data
             for (int a = 0; a < Commands.Rows.Count - 0; a++)
             {
+				
+				// Created By Amir Lichter
+                if (a > 0)
+                {
+                    float grad = float.Parse(Commands.Rows[a].Cells[15].Value.ToString());
+
+                    if (grad > 11)
+                    {
+                        highGrad = true;
+                    }
+                }
+				
                 for (int b = 0; b < Commands.ColumnCount - 0; b++)
                 {
                     double answer;
@@ -1739,6 +1793,28 @@ namespace MissionPlanner.GCSViews
                         }
                     }
                 }
+            }
+			
+			// Created By Amir Lichter
+            if (haveVTOLTakeOff && haveVTOLLand)
+            {
+                CustomMessageBox.Show("VTOL_TAKEOFF AND VTOL_LAND. YOU CAN CONTINUE!");
+            }
+            else
+            {
+                CustomMessageBox.Show("WARNING!!! YOU NOT ADD VTOL_TAKEOFF OR VTOL_LAND.");
+            }
+
+            // Created By Amir Lichter
+            if (smallDest)
+            {
+                CustomMessageBox.Show("WARNING!!! destination from land is less then 80 m/s");
+            }
+
+            // Created By Amir Lichter
+            if (highGrad)
+            {
+                CustomMessageBox.Show("WARNING!!! gradiant from last point is bigger then 11%");
             }
 
             IProgressReporterDialogue frmProgressReporter = new ProgressReporterDialogue
@@ -2258,6 +2334,7 @@ namespace MissionPlanner.GCSViews
         /// <summary>
         /// Processes a loaded EEPROM to the map and datagrid
         /// </summary>
+		/// Amir Lichter
         void processToScreen(List<Locationwp> cmds, bool append = false)
         {
             quickadd = true;
@@ -2364,41 +2441,48 @@ namespace MissionPlanner.GCSViews
 
             setWPParams();
 
+			// Amir Lichter
             if (!append)
             {
                 try
                 {
-                    DataGridViewTextBoxCell cellhome;
-                    cellhome = Commands.Rows[0].Cells[Lat.Index] as DataGridViewTextBoxCell;
-                    if (cellhome.Value != null)
+                    if (Commands.RowCount > 0)
                     {
-                        if (cellhome.Value.ToString() != TXT_homelat.Text && cellhome.Value.ToString() != "0")
-                        {
-                            var dr = CustomMessageBox.Show("Reset Home to loaded coords", "Reset Home Coords",
-                                MessageBoxButtons.YesNo);
-
-                            if (dr == (int)DialogResult.Yes)
-                            {
-                                TXT_homelat.Text = (double.Parse(cellhome.Value.ToString())).ToString();
-                                cellhome = Commands.Rows[0].Cells[Lon.Index] as DataGridViewTextBoxCell;
-                                TXT_homelng.Text = (double.Parse(cellhome.Value.ToString())).ToString();
-                                cellhome = Commands.Rows[0].Cells[Alt.Index] as DataGridViewTextBoxCell;
-                                TXT_homealt.Text =
-                                    (double.Parse(cellhome.Value.ToString())*CurrentState.multiplieralt).ToString();
-                            }
-                        }
+                        log.Info("remove last command from list");
+                        Commands.Rows.Remove(Commands.Rows[Commands.Rows.Count - 1]); // remove home row
                     }
+
+                    //DataGridViewTextBoxCell cellhome;
+                    //cellhome = Commands.Rows[0].Cells[Lat.Index] as DataGridViewTextBoxCell;
+                    //if (cellhome.Value != null)
+                    //{
+                    //    if (cellhome.Value.ToString() != TXT_homelat.Text && cellhome.Value.ToString() != "0")
+                    //    {
+                    //        var dr = CustomMessageBox.Show("Reset Home to loaded coords", "Reset Home Coords",
+                    //            MessageBoxButtons.YesNo);
+
+                    //        if (dr == (int)DialogResult.Yes)
+                    //        {
+                    //            TXT_homelat.Text = (double.Parse(cellhome.Value.ToString())).ToString();
+                    //            cellhome = Commands.Rows[0].Cells[Lon.Index] as DataGridViewTextBoxCell;
+                    //            TXT_homelng.Text = (double.Parse(cellhome.Value.ToString())).ToString();
+                    //            cellhome = Commands.Rows[0].Cells[Alt.Index] as DataGridViewTextBoxCell;
+                    //            TXT_homealt.Text =
+                    //                (double.Parse(cellhome.Value.ToString()) * CurrentState.multiplieralt).ToString();
+                    //        }
+                    //    }
+                    //}
                 }
                 catch (Exception ex)
                 {
                     log.Error(ex.ToString());
                 } // if there is no valid home
 
-                if (Commands.RowCount > 0)
-                {
-                    log.Info("remove home from list");
-                    Commands.Rows.Remove(Commands.Rows[0]); // remove home row
-                }
+                //if (Commands.RowCount > 0)
+                //{
+                //    log.Info("remove home from list");
+                //    Commands.Rows.Remove(Commands.Rows[0]); // remove home row
+                //}
             }
 
             quickadd = false;
@@ -3461,8 +3545,11 @@ namespace MissionPlanner.GCSViews
             }
 
             //draging
-            if (e.Button == MouseButtons.Left && isMouseDown)
+			// Amir Lichter
+            if (e.Button == MouseButtons.Left && isMouseDown && draggButtonClicked)
             {
+				this.Cursor = Cursors.SizeAll;
+				
                 isMouseDraging = true;
                 if (CurrentRallyPt != null)
                 {
