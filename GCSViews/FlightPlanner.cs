@@ -3417,7 +3417,7 @@ namespace MissionPlanner.GCSViews
                     isMouseDraging = false;
                     return;
                 }
-                if (!isMouseDraging)
+                if (!isMouseDraging && addWPButtonClicked)
                 {
                     if (CurentRectMarker != null)
                     {
@@ -7131,6 +7131,32 @@ Column 1: Field type (RALLY is the only one at the moment -- may have RALLY_LAND
             frmProgressReporter.Dispose();
 
             MainMap.Focus();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if (addWPButtonClicked)
+            {
+                addWPButtonClicked = false;
+                draggButtonClicked = true;
+            }
+            else
+            {
+                this.Cursor = Cursors.Default;
+                addWPButtonClicked = true;
+                draggButtonClicked = false;
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (history.Count > 0)
+            {
+                int no = history.Count - 1;
+                var pop = history[no];
+                history.RemoveAt(no);
+                WPtoScreen(pop);
+            }
         }
     }
 }
